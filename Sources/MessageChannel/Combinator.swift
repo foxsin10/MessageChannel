@@ -17,8 +17,12 @@ public struct Combinator {
         )
     }
 
-    public func register(_ receiver: Messager) {
-        channel.register(receiver)
+    public func register(to channel: MessageDispatchChannel) {
+        guard channel != self.channel else {
+            runtimeWarning("should not register to self hold channel")
+            return
+        }
+        channel.register(.combinator(self))
     }
 
     public func removeAll() {
@@ -29,8 +33,8 @@ public struct Combinator {
         channel.removeValue(for: key)
     }
 
-    public func remove(_ receiver: AnyReceiver) {
-        channel.remove(receiver)
+    public func remove(_ messager: Messager) {
+        channel.removeValue(for: messager.receiverIdentifier)
     }
 }
 
