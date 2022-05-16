@@ -41,13 +41,13 @@ final class MessageChannelTests: XCTestCase {
 
         // C -> B -> A
         $messager
-            .pullback { (m: B) -> A? in
+            .extend { (m: B) -> A? in
                 switch m {
                 case .goodbye: return .ping
                 case .hello: return .pong
                 }
             }
-            .pullback { (m: C) -> B? in
+            .extend { (m: C) -> B? in
                 switch m {
                 case .carry: return .goodbye
                 }

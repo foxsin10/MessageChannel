@@ -1,7 +1,7 @@
 import SwiftUI
 import struct OrderedCollections.OrderedDictionary
 
-public final class MessageChannel {
+public final class MessageDispatchChannel {
     private var receiverMap = OrderedDictionary<String, AnyReceiver>()
 
     public init() {}
@@ -33,16 +33,16 @@ public final class MessageChannel {
     }
 }
 
-extension MessageChannel {
+extension MessageDispatchChannel {
     public func remove(_ receiver: AnyReceiver) {
         removeValue(for: receiver.receiverIdentifier)
     }
 }
 
 fileprivate struct MessageChannelKey: EnvironmentKey {
-    static var defaultValue = MessageChannel()
+    static var defaultValue = MessageDispatchChannel()
 }
 
 extension EnvironmentValues {
-    public var messageChannel: MessageChannel { self[MessageChannelKey.self] }
+    public var messageChannel: MessageDispatchChannel { self[MessageChannelKey.self] }
 }

@@ -27,7 +27,7 @@ public final class MessageReceiver<Value> {
     }
 
     @inlinable
-    public func pullback<B>(_ f: @escaping (B) -> Value?) -> MessageReceiver<B> {
+    public func extend<B>(_ f: @escaping (B) -> Value?) -> MessageReceiver<B> {
         MessageReceiver<B>.init { b in
             guard let value = f(b) else {
                 return
@@ -59,7 +59,7 @@ public extension MessageReceiver where Value: Message {
     /// - Parameter channel: the channel AnyReceiver will be registered in
     /// - Returns: AnyReceiver
     @inlinable
-    func eraseToAnyReceiver(in channel: MessageChannel? = nil) -> AnyReceiver {
+    func eraseToAnyReceiver(in channel: MessageDispatchChannel? = nil) -> AnyReceiver {
         AnyReceiver(self, channel: channel)
     }
 }
@@ -75,7 +75,7 @@ public final class AnyReceiver {
     public let receiverIdentifier: String
 
     private let receiver: AnyObject
-    private let channel: MessageChannel
+    private let channel: MessageDispatchChannel
 
     private(set) var registerFinish: () -> Void
 
@@ -84,7 +84,7 @@ public final class AnyReceiver {
     public init<M: Message>(
         wrappedValue: MessageReceiver<M>,
         autoRegister: Bool = true,
-        channel: MessageChannel? = nil
+        channel: MessageDispatchChannel? = nil
     ) {
         self.receiver = wrappedValue
         self.receiverIdentifier = wrappedValue.registerKey
@@ -108,7 +108,7 @@ public final class AnyReceiver {
     }
 
     @discardableResult
-    public func pullback<B: Message, V: Message>(_ f: @escaping (B) -> V?) -> AnyReceiver {
+    public func extend<B: Message, V: Message>(_ f: @escaping (B) -> V?) -> AnyReceiver {
         AnyReceiver(
             wrappedValue: MessageReceiver<B> { b in
                 guard let v = f(b) else {
@@ -146,7 +146,7 @@ public extension AnyReceiver {
     convenience init<M: Message>(
        _ wrappedValue: MessageReceiver<M>,
        autoRegister: Bool = false,
-       channel: MessageChannel? = nil
+       channel: MessageDispatchChannel? = nil
     ) {
         self.init(wrappedValue: wrappedValue, autoRegister: autoRegister, channel: channel)
     }
