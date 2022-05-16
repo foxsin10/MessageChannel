@@ -15,7 +15,7 @@ public final class MessageDispatchChannel {
 
     /// Register an `AnyReceiver` in channel
     /// - Parameter receiver: an `AnyReceiver` instance will be registered in channel
-    public func register(_ receiver: Messager) {
+    func register(_ receiver: Messager) {
         receiverMap[receiver.receiverIdentifier] = receiver
         receiver.registerFinish()
     }
@@ -46,8 +46,16 @@ extension MessageDispatchChannel: Hashable {
 }
 
 extension MessageDispatchChannel {
+    public func remove(_ receiver: Messager) {
+        removeValue(for: receiver.receiverIdentifier)
+    }
+
     public func remove(_ receiver: AnyReceiver) {
         removeValue(for: receiver.receiverIdentifier)
+    }
+
+    public func remove(_ combinator: Combinator) {
+        removeValue(for: combinator.receiver.receiverIdentifier)
     }
 }
 

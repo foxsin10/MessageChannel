@@ -70,8 +70,15 @@ final class MessageChannelTests: XCTestCase {
         }
 
         releaseAfterTest()
+        let channel = MessageDispatchChannel()
+        let combinator = Combinator(
+            wrappedValue: MessageReceiver<B> { message in
 
-        let graph = MessageChannelGraph()
+            },
+            channel: channel
+        )
+
+        combinator.register(to: channel)
     }
 
     func testDellocatingGraph() {
