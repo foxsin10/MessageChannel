@@ -4,13 +4,12 @@ import SwiftUI
 /// A protocol witness class for `Value`
 public final class MessageReceiver<Value> {
     /// Callback when receive value
-    public let onReceive: (Value) -> Void
+    public private(set) var onReceive: (Value) -> Void
 
     /// Identifier
     public lazy private(set) var identifier = ObjectIdentifier(self)
 
-    @inlinable
-    public init(onReceive: @escaping (Value) -> Void) {
+    public init(onReceive: @escaping (Value) -> Void = { _ in }) {
         self.onReceive = onReceive
     }
 
@@ -41,6 +40,12 @@ extension MessageReceiver where Value: Message {
     /// The Identifier will be used for register key
     public var registerKey: String {
         "\(Value.identifyKey)-\(identifier)"
+    }
+
+    public func dispatch(to channel: MessageDispatchChannel) {
+        self.onReceive = { message in
+            channel.send(message)
+        }
     }
 }
 
@@ -83,7 +88,7 @@ public struct AnyReceiver {
     public init<M: Message>(
         wrappedValue: MessageReceiver<M>,
         autoRegister: Bool = true,
-        channel: MessageDispatchChannel? = nil
+        receiverChannel: MessageDispatchChannel? = nil
     ) {
         self.receiver = wrappedValue
         self.receiverIdentifier = wrappedValue.registerKey
@@ -92,7 +97,7 @@ public struct AnyReceiver {
         }
 
         self.channel = {
-            if let channel = channel {
+            if let channel = receiverChannel {
                 return channel
             } else {
                 @Environment(\.messageChannel)
@@ -116,7 +121,7 @@ public struct AnyReceiver {
                 (self.receiver as? MessageReceiver<V>)?.onReceive(v)
             },
             autoRegister: false,
-            channel: self.channel
+            receiverChannel: self.channel
         )
     }
 
@@ -154,7 +159,7 @@ public extension AnyReceiver {
         autoRegister: Bool = false,
         channel: MessageDispatchChannel? = nil
     ) {
-        self.init(wrappedValue: wrappedValue, autoRegister: autoRegister, channel: channel)
+        self.init(wrappedValue: wrappedValue, autoRegister: autoRegister, receiverChannel: channel)
     }
 }
 

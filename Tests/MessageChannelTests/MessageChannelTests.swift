@@ -25,7 +25,7 @@ final class MessageChannelTests: XCTestCase {
             XCTAssert(channel?.receivers.isEmpty ?? false)
 
             // propertywrapper use auto register on default
-            @AnyReceiver(channel: channel!)
+            @AnyReceiver(receiverChannel: channel!)
             var messager = MessageReceiver<A> { message in
                 print("propertyWrapper receive:", message)
                 textMessage = message.plainText
@@ -62,23 +62,35 @@ final class MessageChannelTests: XCTestCase {
             MessageReceiver<B> { message in
                 print("mess receive:", message.plainText)
             }
-            .eraseToAnyReceiver()
+            .eraseToAnyReceiver(in: channel)
             .register()
+            
             channel?.send(B.goodbye)
             channel?.removeAll()
             channel = nil
         }
 
         releaseAfterTest()
-        let channel = MessageDispatchChannel()
-        let combinator = Combinator(
-            wrappedValue: MessageReceiver<B> { message in
+    }
 
-            },
-            channel: channel
-        )
+    func testCombinator() {
+        let subChannel = MessageDispatchChannel()
+        let dispatchChannel = MessageDispatchChannel()
+        var bMessage: B?
 
-        combinator.register(to: channel)
+        @Combinator(receiverChannel: dispatchChannel, dispatchChannel: subChannel)
+        var combinator = MessageReceiver<B>()
+
+        // a re-dispatch
+        MessageReceiver<B> { m in
+            bMessage = m
+        }
+        .eraseToAnyReceiver(in: subChannel)
+        .register()
+
+        dispatchChannel.send(B.goodbye)
+
+        XCTAssert(bMessage?.plainText == B.goodbye.plainText)
     }
 
     func testDellocatingGraph() {
