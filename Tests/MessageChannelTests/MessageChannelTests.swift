@@ -18,52 +18,60 @@ final class MessageChannelTests: XCTestCase {
     }
 
     func testExample() throws {
-        @Environment(\.messageChannel)
-        var channel
+        func releaseAfterTest() {
+            var channel: MessageDispatchChannel? = MessageDispatchChannel()
 
-        var textMessage: String = ""
-        XCTAssert(channel.receivers.isEmpty)
+            var textMessage: String = ""
+            XCTAssert(channel?.receivers.isEmpty ?? false)
 
-        // propertywrapper use auto register on default
-        @AnyReceiver
-        var messager = MessageReceiver<A> { message in
-            print("propertyWrapper receive:", message)
-            textMessage = message.plainText
-        }
-
-        channel.send(A.pong)
-
-        XCTAssert(channel.receivers.count == 1)
-        XCTAssert(textMessage == A.pong.plainText)
-
-        channel.remove($messager)
-        XCTAssert(channel.receivers.isEmpty)
-
-        // C -> B -> A
-        $messager
-            .extend { (m: B) -> A? in
-                switch m {
-                case .goodbye: return .ping
-                case .hello: return .pong
-                }
+            // propertywrapper use auto register on default
+            @AnyReceiver(channel: channel!)
+            var messager = MessageReceiver<A> { message in
+                print("propertyWrapper receive:", message)
+                textMessage = message.plainText
             }
-            .extend { (m: C) -> B? in
-                switch m {
-                case .carry: return .goodbye
+
+            channel?.send(A.pong)
+
+            XCTAssert(channel?.receivers.count == 1)
+            XCTAssert(textMessage == A.pong.plainText)
+
+            channel?.remove($messager)
+            XCTAssert(channel?.receivers.isEmpty ?? false)
+
+            // C -> B -> A
+            // here we register a new AnyReceiver into channel
+            $messager
+                .extend { (m: B) -> A? in
+                    switch m {
+                    case .goodbye: return .ping
+                    case .hello: return .pong
+                    }
                 }
+                .extend { (m: C) -> B? in
+                    switch m {
+                    case .carry: return .goodbye
+                    }
+                }
+                .register()
+
+            channel?.send(C.carry)
+            XCTAssert(textMessage == A.ping.plainText)
+
+            // convenience initializer don't use autoregister on default
+            MessageReceiver<B> { message in
+                print("mess receive:", message.plainText)
             }
+            .eraseToAnyReceiver()
             .register()
-
-        channel.send(C.carry)
-        XCTAssert(textMessage == A.ping.plainText)
-
-        // convenience initializer don't use autoregister on default
-        MessageReceiver<B> { message in
-            print("mess receive:", message.plainText)
+            channel?.send(B.goodbye)
+            channel?.removeAll()
+            channel = nil
         }
-        .eraseToAnyReceiver()
-        .register()
-        channel.send(B.goodbye)
+
+        releaseAfterTest()
+
+        let graph = MessageChannelGraph()
     }
 
     func testDellocatingGraph() {

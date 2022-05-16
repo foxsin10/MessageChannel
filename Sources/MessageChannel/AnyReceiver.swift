@@ -65,21 +65,20 @@ public extension MessageReceiver where Value: Message {
 }
 
 
+/// This is not a thread safe type, we should only use this class on the same thread or actor
 /// A propertyWrapper that erase the receiver type
 @propertyWrapper
-public final class AnyReceiver {
+public struct AnyReceiver {
     public var wrappedValue: AnyObject { receiver }
     public var projectedValue: AnyReceiver { self }
 
-    /// Identifier from MessageReceiver<M>  
+    /// Identifier from MessageReceiver<M>
     public let receiverIdentifier: String
 
     private let receiver: AnyObject
     private let channel: MessageDispatchChannel
 
     private(set) var registerFinish: () -> Void
-
-    lazy fileprivate(set) var identifier = ObjectIdentifier(self)
 
     public init<M: Message>(
         wrappedValue: MessageReceiver<M>,
@@ -103,7 +102,7 @@ public final class AnyReceiver {
         }()
 
         if autoRegister {
-            self.channel.register(self)
+            self.channel.register(.receiver(self))
         }
     }
 
@@ -122,7 +121,7 @@ public final class AnyReceiver {
     }
 
     public func register() {
-        channel.register(self)
+        channel.register(.receiver(self))
     }
 
     /// Remove from MessageChannel
@@ -131,22 +130,29 @@ public final class AnyReceiver {
     }
 
     func receive<M: Message>(_ message: M) {
-        guard receiverIdentifier.contains(M.identifyKey),
-              let consumer = receiver as? MessageReceiver<M>,
-              consumer.canReceiveMessage else {
+        // As receiverIdentifier equals to MessageReceiver's registerKey,
+        // if receiverIdentifier contains M.identifyKey, it means receiver is an instance of MessageReceiver<M>
+        // otherwise we can just return
+        guard receiverIdentifier.contains(M.identifyKey) else {
             return
         }
 
+        let consumer = unsafeBitCast(receiver, to: MessageReceiver<M>.self)
+        // if the consumer is already registered, receive message
+        // otherwise just return
+        guard consumer.canReceiveMessage else {
+            return
+        }
         consumer.onReceive(message)
     }
 }
 
 public extension AnyReceiver {
     @inlinable
-    convenience init<M: Message>(
-       _ wrappedValue: MessageReceiver<M>,
-       autoRegister: Bool = false,
-       channel: MessageDispatchChannel? = nil
+    init<M: Message>(
+        _ wrappedValue: MessageReceiver<M>,
+        autoRegister: Bool = false,
+        channel: MessageDispatchChannel? = nil
     ) {
         self.init(wrappedValue: wrappedValue, autoRegister: autoRegister, channel: channel)
     }
@@ -154,11 +160,10 @@ public extension AnyReceiver {
 
 extension AnyReceiver: Hashable {
     public static func == (lhs: AnyReceiver, rhs: AnyReceiver) -> Bool {
-        lhs.identifier == rhs.identifier
+        lhs.receiverIdentifier == rhs.receiverIdentifier
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(receiverIdentifier)
-        hasher.combine(identifier)
     }
 }
