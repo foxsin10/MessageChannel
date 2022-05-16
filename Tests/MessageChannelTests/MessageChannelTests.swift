@@ -42,13 +42,13 @@ final class MessageChannelTests: XCTestCase {
             // C -> B -> A
             // here we register a new AnyReceiver into channel
             $messager
-                .extend { (m: B) -> A? in
+                .reserve { (m: B) -> A? in
                     switch m {
                     case .goodbye: return .ping
                     case .hello: return .pong
                     }
                 }
-                .extend { (m: C) -> B? in
+                .reserve { (m: C) -> B? in
                     switch m {
                     case .carry: return .goodbye
                     }
