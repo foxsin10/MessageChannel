@@ -160,10 +160,12 @@ public extension AnyReceiver {
 
 extension AnyReceiver: Hashable {
     public static func == (lhs: AnyReceiver, rhs: AnyReceiver) -> Bool {
-        lhs.receiverIdentifier == rhs.receiverIdentifier
+        lhs.receiverIdentifier == rhs.receiverIdentifier &&
+        lhs.channel == rhs.channel
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(receiverIdentifier)
+        hasher.combine(channel.identifier)
     }
 }
