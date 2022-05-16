@@ -4,6 +4,8 @@ import struct OrderedCollections.OrderedDictionary
 public final class MessageChannel {
     private var receiverMap = OrderedDictionary<String, AnyReceiver>()
 
+    public init() {}
+
     /// Receivers registerd in channel
     public var receivers: [AnyReceiver] {
         receiverMap.values.map { $0 }

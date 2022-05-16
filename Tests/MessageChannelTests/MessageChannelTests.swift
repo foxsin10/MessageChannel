@@ -68,8 +68,12 @@ final class MessageChannelTests: XCTestCase {
 
     func testDellocatingGraph() {
         func testGraph() {
+            @Environment(\.messageChannel)
+            var channel
+
             let graph = MessageChannelGraph()
-            graph.channel.send(B.goodbye)
+            _ = graph.$messager.receiverIdentifier
+            channel.send(B.goodbye)
 
             XCTAssert(graphMessage?.plainText == B.goodbye.plainText)
         }
@@ -95,9 +99,6 @@ final class MessageChannelGraph {
 
     @AnyReceiver
     var messager: AnyObject
-
-    @Environment(\.messageChannel)
-    var channel
 
     init() {
         _messager = .init(wrappedValue: MessageReceiver<B> {

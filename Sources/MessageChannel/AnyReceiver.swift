@@ -9,6 +9,7 @@ public final class MessageReceiver<Value> {
     /// Identifier
     public lazy private(set) var identifier = ObjectIdentifier(self)
 
+    @inlinable
     public init(onReceive: @escaping (Value) -> Void) {
         self.onReceive = onReceive
     }
@@ -25,6 +26,7 @@ public final class MessageReceiver<Value> {
         canReceiveMessage = true
     }
 
+    @inlinable
     public func pullback<B>(_ f: @escaping (B) -> Value?) -> MessageReceiver<B> {
         MessageReceiver<B>.init { b in
             guard let value = f(b) else {
@@ -56,14 +58,15 @@ public extension MessageReceiver where Value: Message {
     /// Return an AnyReceiver
     /// - Parameter channel: the channel AnyReceiver will be registered in
     /// - Returns: AnyReceiver
+    @inlinable
     func eraseToAnyReceiver(in channel: MessageChannel? = nil) -> AnyReceiver {
         AnyReceiver(self, channel: channel)
     }
 }
 
 
-@propertyWrapper
 /// A propertyWrapper that erase the receiver type
+@propertyWrapper
 public final class AnyReceiver {
     public var wrappedValue: AnyObject { receiver }
     public var projectedValue: AnyReceiver { self }
@@ -122,7 +125,7 @@ public final class AnyReceiver {
         channel.register(self)
     }
 
-    /// Be Removed from MessageChannel
+    /// Remove from MessageChannel
     public func removeFromChannel() {
         channel.remove(self)
     }
@@ -139,6 +142,7 @@ public final class AnyReceiver {
 }
 
 public extension AnyReceiver {
+    @inlinable
     convenience init<M: Message>(
        _ wrappedValue: MessageReceiver<M>,
        autoRegister: Bool = false,
