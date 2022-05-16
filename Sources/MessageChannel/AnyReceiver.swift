@@ -27,7 +27,7 @@ public final class MessageReceiver<Value> {
     }
 
     @inlinable
-    public func extend<B>(_ f: @escaping (B) -> Value?) -> MessageReceiver<B> {
+    public func reserve<B>(_ f: @escaping (B) -> Value?) -> MessageReceiver<B> {
         MessageReceiver<B>.init { b in
             guard let value = f(b) else {
                 return
@@ -107,7 +107,7 @@ public struct AnyReceiver {
     }
 
     @discardableResult
-    public func extend<B: Message, V: Message>(_ f: @escaping (B) -> V?) -> AnyReceiver {
+    public func reserve<B: Message, V: Message>(_ f: @escaping (B) -> V?) -> AnyReceiver {
         AnyReceiver(
             wrappedValue: MessageReceiver<B> { b in
                 guard let v = f(b) else {
