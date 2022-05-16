@@ -16,6 +16,22 @@ public struct Combinator {
             }
         )
     }
+
+    public func register(_ receiver: Messager) {
+        channel.register(receiver)
+    }
+
+    public func removeAll() {
+        channel.removeAll()
+    }
+
+    public func removeValue(for key: String) {
+        channel.removeValue(for: key)
+    }
+
+    public func remove(_ receiver: AnyReceiver) {
+        channel.remove(receiver)
+    }
 }
 
 extension Combinator: Hashable {}
