@@ -1,28 +1,31 @@
 import Foundation
 
 /// An object tha resend the message, which is received by it's receiver, to hold channel
+@propertyWrapper
 public struct Combinator {
+    public var wrappedValue: AnyReceiver { receiver }
+    public var projectedValue: Combinator { self }
+
     private let channel: MessageDispatchChannel
     public let receiver: AnyReceiver
 
+    /// Combinator initializer
+    /// - Parameters:
+    ///   - wrappedValue: messager
+    ///   - receiverChannel: the channel from which messager receive message
+    ///   - dispatchChannel: the channel messager re-dispatch message to
     public init<M: Message>(
         wrappedValue: MessageReceiver<M>,
-        channel: MessageDispatchChannel
+        receiverChannel: MessageDispatchChannel,
+        dispatchChannel: MessageDispatchChannel
     ) {
-        self.channel = channel
-        self.receiver = .init(
-            wrappedValue: .init { (message: M) in
-                channel.send(message)
-            }
-        )
+        wrappedValue.dispatch(to: dispatchChannel)
+        self.receiver = AnyReceiver(wrappedValue, autoRegister: true, channel: receiverChannel)
+        self.channel = dispatchChannel
     }
 
-    public func register(to channel: MessageDispatchChannel) {
-        guard channel != self.channel else {
-            runtimeWarning("should not register to self hold channel")
-            return
-        }
-        channel.register(.combinator(self))
+    public func register() {
+        receiver.register()
     }
 
     public func removeAll() {
@@ -35,6 +38,10 @@ public struct Combinator {
 
     public func remove(_ messager: Messager) {
         channel.removeValue(for: messager.receiverIdentifier)
+    }
+
+    public func send<M: Message>(_ message: M) {
+        channel.send(message)
     }
 }
 
