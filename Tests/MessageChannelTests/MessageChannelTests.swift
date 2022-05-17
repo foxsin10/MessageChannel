@@ -4,6 +4,9 @@ import XCTest
 import Combine
 import SwiftUI
 
+fileprivate var graphMessage: MessageChannelTests.B?
+fileprivate var nodeMessage: MessageChannelTests.B?
+
 final class MessageChannelTests: XCTestCase {
     enum A: Message {
         case ping
@@ -96,6 +99,22 @@ final class MessageChannelTests: XCTestCase {
     }
 
     func testDellocatingGraph() {
+        defer { graphMessage = nil }
+        final class MessageChannelGraph {
+            typealias B = MessageChannelTests.B
+
+            @AnyReceiver
+            var messager: AnyObject
+
+            init() {
+                _messager = .init(wrappedValue: MessageReceiver<B> {
+                    graphMessage = $0
+                })
+            }
+
+            deinit { $messager.removeFromChannel() }
+        }
+
         func testGraph() {
             @Environment(\.messageChannel)
             var channel
@@ -111,6 +130,24 @@ final class MessageChannelTests: XCTestCase {
     }
 
     func testDellocatingNode() {
+        defer { nodeMessage = nil }
+        final class MessageChannelNode {
+            typealias B = MessageChannelTests.B
+            var messager: MessageReceiver<B>
+
+            @Environment(\.messageChannel)
+            var channel
+
+            init() {
+                messager = MessageReceiver<B> { nodeMessage = $0 }
+                messager
+                    .eraseToAnyReceiver()
+                    .register()
+            }
+
+            deinit { channel.removeValue(for: messager.registerKey) }
+        }
+
         func testGraph() {
             let graph = MessageChannelNode()
             graph.channel.send(B.goodbye)
@@ -139,41 +176,11 @@ final class MessageChannelTests: XCTestCase {
         var channel;
 
         channel.send(B.hello)
+        XCTAssert(channel.receivers.isEmpty == false)
+
+        $message.receiver.removeFromChannel()
 
         XCTAssert(receiveMessage?.plainText == B.hello.plainText)
+        XCTAssert(channel.receivers.isEmpty)
     }
-}
-
-var graphMessage: MessageChannelTests.B?
-final class MessageChannelGraph {
-    typealias B = MessageChannelTests.B
-
-    @AnyReceiver
-    var messager: AnyObject
-
-    init() {
-        _messager = .init(wrappedValue: MessageReceiver<B> {
-            graphMessage = $0
-        })
-    }
-    
-    deinit { $messager.removeFromChannel() }
-}
-
-var nodeMessage: MessageChannelTests.B?
-final class MessageChannelNode {
-    typealias B = MessageChannelTests.B
-    var messager: MessageReceiver<B>
-
-    @Environment(\.messageChannel)
-    var channel
-
-    init() {
-        messager = MessageReceiver<B> { nodeMessage = $0 }
-        messager
-            .eraseToAnyReceiver()
-            .register()
-    }
-
-    deinit { channel.removeValue(for: messager.registerKey) }
 }
