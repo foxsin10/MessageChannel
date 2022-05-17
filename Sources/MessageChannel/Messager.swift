@@ -1,5 +1,3 @@
-import Foundation
-
 public enum Messager {
     case receiver(AnyReceiver)
     case combinator(Combinator)

@@ -1,6 +1,3 @@
-import Foundation
-import SwiftUI
-
 /// A protocol witness class for `Value`
 public final class MessageReceiver<Value> {
     /// Callback when receive value
@@ -42,8 +39,9 @@ extension MessageReceiver where Value: Message {
         "\(Value.identifyKey)-\(identifier)"
     }
 
-    public func dispatch(to channel: MessageDispatchChannel) {
+    public func dispatch(to channel: MessageDispatchChannel, hook: @escaping (Value) -> Void = { _ in }) {
         self.onReceive = { message in
+            hook(message)
             channel.send(message)
         }
     }
@@ -64,8 +62,11 @@ public extension MessageReceiver where Value: Message {
     /// - Parameter channel: the channel AnyReceiver will be registered in
     /// - Returns: AnyReceiver
     @inlinable
-    func eraseToAnyReceiver(in channel: MessageDispatchChannel? = nil) -> AnyReceiver {
-        AnyReceiver(self, channel: channel)
+    func eraseToAnyReceiver(
+        in channel: MessageDispatchChannel? = nil,
+        autoRegister: Bool = false
+    ) -> AnyReceiver {
+        AnyReceiver(self, autoRegister: autoRegister, channel: channel)
     }
 }
 

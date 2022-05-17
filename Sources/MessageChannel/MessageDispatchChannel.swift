@@ -1,4 +1,3 @@
-import SwiftUI
 import struct OrderedCollections.OrderedDictionary
 
 public final class MessageDispatchChannel {
