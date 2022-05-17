@@ -1,5 +1,3 @@
-import Foundation
-
 /// An object tha resend the message, which is received by it's receiver, to hold channel
 @propertyWrapper
 public struct Combinator {
@@ -12,14 +10,19 @@ public struct Combinator {
     /// Combinator initializer
     /// - Parameters:
     ///   - wrappedValue: messager
-    ///   - receiverChannel: the channel from which messager receive message
+    ///   - receiverChannel: the channel from which messager receive message.
+    ///   this can not equals to dispatchChannel
     ///   - dispatchChannel: the channel messager re-dispatch message to
     public init<M: Message>(
         wrappedValue: MessageReceiver<M>,
-        receiverChannel: MessageDispatchChannel,
-        dispatchChannel: MessageDispatchChannel
+        hook: @escaping (M) -> Void = { _ in },
+        dispatchingIn dispatchChannel: MessageDispatchChannel,
+        receivingIn receiverChannel: MessageDispatchChannel? = nil
     ) {
-        wrappedValue.dispatch(to: dispatchChannel)
+        // if receiverChannel == dispatchChannel will cause function call overflow
+        // so we just do assert
+        assert(receiverChannel != dispatchChannel, "Dispatch and receive message in the same channel")
+        wrappedValue.dispatch(to: dispatchChannel, hook: hook)
         self.receiver = AnyReceiver(wrappedValue, autoRegister: true, channel: receiverChannel)
         self.channel = dispatchChannel
     }
@@ -30,6 +33,10 @@ public struct Combinator {
 
     public func removeAll() {
         channel.removeAll()
+    }
+
+    public func removeFromReceivingChannel() {
+        receiver.removeFromChannel()
     }
 
     public func removeValue(for key: String) {

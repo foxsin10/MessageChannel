@@ -1,5 +1,7 @@
 import XCTest
 @testable import MessageChannel
+
+import Combine
 import SwiftUI
 
 final class MessageChannelTests: XCTestCase {
@@ -78,7 +80,7 @@ final class MessageChannelTests: XCTestCase {
         let dispatchChannel = MessageDispatchChannel()
         var bMessage: B?
 
-        @Combinator(receiverChannel: dispatchChannel, dispatchChannel: subChannel)
+        @Combinator(dispatchingIn: subChannel, receivingIn: dispatchChannel)
         var combinator = MessageReceiver<B>()
 
         // a re-dispatch
@@ -117,6 +119,28 @@ final class MessageChannelTests: XCTestCase {
         }
 
         testGraph()
+    }
+
+    func testReceiving() {
+        var storage: Set<AnyCancellable> = []
+
+        @Receiving
+        var message: B?
+
+        var receiveMessage: B?
+        $message
+            .publisher
+            .sink { m in
+                receiveMessage = m
+            }
+            .store(in: &storage)
+
+        @Environment(\.messageChannel)
+        var channel;
+
+        channel.send(B.hello)
+
+        XCTAssert(receiveMessage?.plainText == B.hello.plainText)
     }
 }
 
