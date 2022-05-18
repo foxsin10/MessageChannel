@@ -1,13 +1,13 @@
 @propertyWrapper
 public struct Receiving<M: Message> {
-    public var wrappedValue: M? { messageSender.value }
+    public var wrappedValue: M? { sender.value }
     public var projectedValue: Receiving<M> { self }
 
-    private let messageSender: CurrentValueSubject<M?, Never>
+    private let sender: CurrentValueSubject<M?, Never>
     public let receiver: AnyReceiver
 
     public var publisher: AnyPublisher<M, Never> {
-        messageSender
+        sender
             .compactMap { $0 }
             .eraseToAnyPublisher()
     }
@@ -20,7 +20,7 @@ public struct Receiving<M: Message> {
         let receiver = MessageReceiver<M> { [sender] in sender.send($0) }
             .eraseToAnyReceiver(in: channel, autoRegister: true)
 
-        self.messageSender = sender
+        self.sender = sender
         self.receiver = receiver
     }
 }

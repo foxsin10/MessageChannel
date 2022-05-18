@@ -39,8 +39,16 @@ extension MessageReceiver where Value: Message {
         "\(Value.identifyKey)-\(identifier)"
     }
 
-    public func hookReceiveCallback(_ f: @escaping (Value) -> Void) {
-        self.onReceive = f
+    public func hookOnReceive(_ f: @escaping (Value) -> Void, recursively: Bool = true) {
+        if recursively {
+            let onReceive = self.onReceive
+            self.onReceive = { message in
+                onReceive(message)
+                f(message)
+            }
+        } else {
+            self.onReceive = f
+        }
     }
 }
 
