@@ -17,7 +17,7 @@ public struct Relaying<M: Message> {
         relayingIn relayingChannel: MessageDispatchChannel
     ) {
 
-        let sender = CurrentValueSubject<M?, Never>(nil)
+        let sender = CurrentValueSubject<M?, Never>(wrappdeValue)
         let combinator = Combinator(
             MessageReceiver<M>(),
             hook: { [sender] message in

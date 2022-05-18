@@ -1,3 +1,4 @@
+import SwiftUI
 /// An object tha resend the message, which is received by it's receiver, to hold channel
 public struct Combinator {
     private let channel: MessageDispatchChannel
@@ -10,7 +11,7 @@ public struct Combinator {
     ///   this can not equals to dispatchChannel
     ///   - dispatchChannel: the channel messager re-dispatch message to
     public init<M: Message>(
-        _ wrappedValue: MessageReceiver<M>,
+        _ wrappedValue: MessageReceiver<M> = .init(),
         hook: @escaping (M) -> Void = { _ in },
         dispatchingIn dispatchChannel: MessageDispatchChannel,
         receivingIn receiverChannel: MessageDispatchChannel? = nil
@@ -18,14 +19,22 @@ public struct Combinator {
         // if receiverChannel == dispatchChannel will cause function call overflow
         // so we just do assert
         assert(receiverChannel != dispatchChannel, "Dispatch and receive message in the same channel")
-        wrappedValue.hookReceiveCallback {
-            hook($0)
+        wrappedValue.hookOnReceive {
             dispatchChannel.send($0)
         }
         
-        receiver = AnyReceiver(wrappedValue, autoRegister: true, channel: receiverChannel)
+        receiver = wrappedValue
+            .eraseToAnyReceiver(in: receiverChannel, autoRegister: false)
+
         channel = dispatchChannel
         channel.ensureRelaying()
+
+        let registerChannel: MessageDispatchChannel = {
+            @Environment(\.messageChannel)
+            var globalChannel;
+            return receiverChannel ?? globalChannel
+        }()
+        registerChannel.register(.combinator(self))
     }
 
     public func removeAll() {

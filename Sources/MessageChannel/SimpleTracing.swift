@@ -75,15 +75,32 @@ extension SimpleTracing: Traceable {
             """
             [MessageChannel]
             \(chennelContent)
-
-            send message:
+            [message]
             \(messageContent)
-            [file: \(file) line: \(line)]\n
+            [file]
+                \(file)
+            [line] \(line)\n
             """
            )
         }
 
         #endif
+    }
+}
+
+extension String {
+    func inserIndent(by count: Int) -> String {
+        if self.isEmpty {
+            return self
+        }
+
+        if self.starts(with: "\n") {
+            let content = self.dropFirst()
+            let indent = String(repeating: " ", count: count)
+            return "\n\(indent)\(content)"
+        } else {
+            return "\(String(repeating: " ", count: count))\(self)"
+        }
     }
 }
 
