@@ -2,7 +2,7 @@
   import os
   import XCTestDynamicOverlay
 
-  // NB: Quot from https://github.com/pointfreeco/swift-composable-architecture/blob/main/Sources/ComposableArchitecture/Internal/RuntimeWarnings.swift
+  // NB: Quote from https://github.com/pointfreeco/swift-composable-architecture/blob/main/Sources/ComposableArchitecture/Internal/RuntimeWarnings.swift
   private let rw = (
     dso: { () -> UnsafeMutableRawPointer in
       let count = _dyld_image_count()

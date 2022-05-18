@@ -39,11 +39,8 @@ extension MessageReceiver where Value: Message {
         "\(Value.identifyKey)-\(identifier)"
     }
 
-    public func dispatch(to channel: MessageDispatchChannel, hook: @escaping (Value) -> Void = { _ in }) {
-        self.onReceive = { message in
-            hook(message)
-            channel.send(message)
-        }
+    public func hookReceiveCallback(_ f: @escaping (Value) -> Void) {
+        self.onReceive = f
     }
 }
 
@@ -72,12 +69,8 @@ public extension MessageReceiver where Value: Message {
 
 
 /// This is not a thread safe type, we should only use this class on the same thread or actor
-/// A propertyWrapper that erase the receiver type
-@propertyWrapper
+/// A struct that erase the receiver type
 public struct AnyReceiver {
-    public var wrappedValue: AnyObject { receiver }
-    public var projectedValue: AnyReceiver { self }
-
     /// Identifier from MessageReceiver<M>
     public let receiverIdentifier: String
 
@@ -113,21 +106,9 @@ public struct AnyReceiver {
     }
 
     @discardableResult
-    public func reserve<B: Message, V: Message>(_ f: @escaping (B) -> V?) -> AnyReceiver {
-        AnyReceiver(
-            wrappedValue: MessageReceiver<B> { b in
-                guard let v = f(b) else {
-                    return
-                }
-                (self.receiver as? MessageReceiver<V>)?.onReceive(v)
-            },
-            autoRegister: false,
-            receiverChannel: self.channel
-        )
-    }
-
-    public func register() {
+    public func register() -> Self {
         channel.register(.receiver(self))
+        return self
     }
 
     /// Remove from MessageChannel
@@ -150,6 +131,27 @@ public struct AnyReceiver {
             return
         }
         consumer.onReceive(message)
+    }
+}
+
+public extension AnyReceiver {
+    @discardableResult
+    func reserve<B: Message, V: Message>(_ f: @escaping (B) -> V?) -> AnyReceiver {
+        AnyReceiver(
+            wrappedValue: MessageReceiver<B> { b in
+                guard let v = f(b) else {
+                    return
+                }
+                guard self.receiverIdentifier.contains(V.identifyKey) else {
+                    return
+                }
+
+                let consumer = unsafeBitCast(self.receiver, to: MessageReceiver<V>.self)
+                consumer.onReceive(v)
+            },
+            autoRegister: false,
+            receiverChannel: self.channel
+        )
     }
 }
 

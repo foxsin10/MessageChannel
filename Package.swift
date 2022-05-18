@@ -26,7 +26,7 @@ let package = Package(
                 .product(name: "XCTestDynamicOverlay", package: "xctest-dynamic-overlay"),
             ],
             swiftSettings: [
-                .define("DEBUG")
+                .define("DEBUG", .when(platforms: [.iOS, .macOS, .tvOS, .watchOS], configuration: .debug))
             ]
         ),
 
