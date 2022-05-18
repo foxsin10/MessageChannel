@@ -16,7 +16,7 @@ public struct Receiving<M: Message> {
         wrappedValue: M? = nil,
         in channel: MessageDispatchChannel? = nil
     ) {
-        let sender = CurrentValueSubject<M?, Never>(wrappedValue)
+        let sender = CurrentValueSubject<M?, Never>(nil)
         let receiver = MessageReceiver<M> { [sender] in sender.send($0) }
             .eraseToAnyReceiver(in: channel, autoRegister: true)
 

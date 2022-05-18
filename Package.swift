@@ -15,6 +15,7 @@ let package = Package(
         // .package(url: /* package url */, from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.2"),
         .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "0.2.1"),
+        .package(url: "https://github.com/pointfreeco/swift-custom-dump.git", from: "0.4.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -24,9 +25,10 @@ let package = Package(
             dependencies: [
                 .product(name: "OrderedCollections", package: "swift-collections"),
                 .product(name: "XCTestDynamicOverlay", package: "xctest-dynamic-overlay"),
+                .product(name: "CustomDump", package: "swift-custom-dump")
             ],
             swiftSettings: [
-                .define("DEBUG", .when(platforms: [.iOS, .macOS, .tvOS, .watchOS], configuration: .debug))
+                .define("Tracing", .when(platforms: [.iOS, .macOS, .tvOS, .watchOS], configuration: .debug))
             ]
         ),
 

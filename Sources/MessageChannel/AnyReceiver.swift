@@ -66,8 +66,6 @@ public extension MessageReceiver where Value: Message {
         AnyReceiver(self, autoRegister: autoRegister, channel: channel)
     }
 }
-
-
 /// This is not a thread safe type, we should only use this class on the same thread or actor
 /// A struct that erase the receiver type
 public struct AnyReceiver {
@@ -84,13 +82,13 @@ public struct AnyReceiver {
         autoRegister: Bool = true,
         receiverChannel: MessageDispatchChannel? = nil
     ) {
-        self.receiver = wrappedValue
-        self.receiverIdentifier = wrappedValue.registerKey
-        self.registerFinish = { [weak wrappedValue] in
+        receiver = wrappedValue
+        receiverIdentifier = wrappedValue.registerKey
+        registerFinish = { [weak wrappedValue] in
             wrappedValue?.registerFinish()
         }
 
-        self.channel = {
+        channel = {
             if let channel = receiverChannel {
                 return channel
             } else {
@@ -101,7 +99,7 @@ public struct AnyReceiver {
         }()
 
         if autoRegister {
-            self.channel.register(.receiver(self))
+            channel.register(.receiver(self))
         }
     }
 
@@ -125,7 +123,7 @@ public struct AnyReceiver {
         }
 
         let consumer = unsafeBitCast(receiver, to: MessageReceiver<M>.self)
-        // if the consumer is already registered, receive message
+        // if the consumer is already registered, we can receive message
         // otherwise just return
         guard consumer.canReceiveMessage else {
             return
