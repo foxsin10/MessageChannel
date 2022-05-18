@@ -1,11 +1,31 @@
 import struct OrderedCollections.OrderedDictionary
 
 public final class MessageDispatchChannel {
+    public enum Mode {
+        case dispatching
+        case relaying
+    }
+
     fileprivate var receiverMap = OrderedDictionary<String, Messager>()
 
     public lazy private(set) var identifier = ObjectIdentifier(self)
 
-    public init() {}
+    public private(set) var tracing: Traceable
+
+    public private(set) var mode: Mode
+
+    public init(
+        mode: Mode = .dispatching,
+        traing: any Traceable = SimpleTracing()
+    ) {
+        self.tracing = traing
+        self.mode = mode
+
+        // make lazy storge be initialized
+        #if Tracing
+        _ = identifier
+        #endif
+    }
 
     /// Receivers registerd in channel
     public var receivers: [AnyReceiver] {
@@ -27,11 +47,16 @@ public final class MessageDispatchChannel {
         receiverMap.removeValue(forKey: key)
     }
 
+    public func replace(_ tracing: any Traceable) {
+        self.tracing = tracing
+    }
+
     public func send<M: Message>(
         _ messge: M,
         _ file: StaticString = #file,
         _ line: Int = #line
     ) {
+        tracing.record(message: messge, from: self, file, line)
         for (_, receiver) in receiverMap {
             receiver.receive(messge)
         }
@@ -49,6 +74,11 @@ extension MessageDispatchChannel: Hashable {
 }
 
 extension MessageDispatchChannel {
+    /// To identify the channel is dispatching or relaying
+    func ensureRelaying() {
+        mode = .relaying
+    }
+
     public func remove(_ receiver: Messager) {
         removeValue(for: receiver.receiverIdentifier)
     }

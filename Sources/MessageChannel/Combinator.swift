@@ -22,8 +22,10 @@ public struct Combinator {
             hook($0)
             dispatchChannel.send($0)
         }
-        self.receiver = AnyReceiver(wrappedValue, autoRegister: true, channel: receiverChannel)
-        self.channel = dispatchChannel
+        
+        receiver = AnyReceiver(wrappedValue, autoRegister: true, channel: receiverChannel)
+        channel = dispatchChannel
+        channel.ensureRelaying()
     }
 
     public func removeAll() {

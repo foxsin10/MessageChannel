@@ -26,13 +26,14 @@ final class MessageChannelTests: XCTestCase {
     func testAnyReceiver() throws {
         func releaseAfterTest() {
             var channel: MessageDispatchChannel? = MessageDispatchChannel()
+            channel?.tracing.enable()
 
             var textMessage: String = ""
             XCTAssert(channel?.receivers.isEmpty ?? false)
 
             // propertywrapper use auto register on default
             let messager = MessageReceiver<A> { message in
-                print("propertyWrapper receive:", message)
+
                 textMessage = message.plainText
             }
             .eraseToAnyReceiver(in: channel!)
@@ -68,7 +69,7 @@ final class MessageChannelTests: XCTestCase {
 
             // convenience initializer don't use autoregister on default
             MessageReceiver<B> { message in
-                print("mess receive:", message.plainText)
+
             }
             .eraseToAnyReceiver(in: channel)
             .register()
@@ -174,9 +175,13 @@ final class MessageChannelTests: XCTestCase {
     func testRelaying() throws {
         var storage: Set<AnyCancellable> = []
         @Environment(\.messageChannel)
-        var messageChannel
+        var messageChannel;
+
+        // enable/disable traing log
+        messageChannel.tracing.enable();defer { messageChannel.tracing.disable() }
 
         let channel = MessageDispatchChannel()
+        channel.tracing.enable()
 
         XCTAssert(messageChannel.receivers.isEmpty)
         XCTAssert(channel.receivers.isEmpty)
@@ -222,5 +227,12 @@ final class MessageChannelTests: XCTestCase {
         $relayMessage.send(B.fear)
         XCTAssert(testMessage?.plainText != B.fear.plainText)
         XCTAssert(receivingMessage?.plainText == B.fear.plainText)
+
+        let ex = expectation(description: "dump")
+        // for dump tracing log
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            ex.fulfill()
+        }
+        wait(for: [ex], timeout: 30)
     }
 }
