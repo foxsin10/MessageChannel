@@ -12,14 +12,14 @@ public struct Relaying<M: Message> {
     }
 
     public init(
-        wrappdeValue: M,
+        wrappdeValue: M? = nil,
         receivingingIn receivingChannel: MessageDispatchChannel? = nil,
         relayingIn relayingChannel: MessageDispatchChannel
     ) {
 
         let sender = CurrentValueSubject<M?, Never>(nil)
         let combinator = Combinator(
-            wrappedValue: MessageReceiver<M>(),
+            MessageReceiver<M>(),
             hook: { [sender] message in
                 sender.send(message)
             },
@@ -29,5 +29,13 @@ public struct Relaying<M: Message> {
 
         self.combinator = combinator
         self.sender = sender
+    }
+
+    public func send(
+        _ message: M,
+        _ file: StaticString = #file,
+        _ line: Int = #line
+    ) {
+        combinator.send(message, file, line)
     }
 }

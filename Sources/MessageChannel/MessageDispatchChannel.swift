@@ -1,7 +1,7 @@
 import struct OrderedCollections.OrderedDictionary
 
 public final class MessageDispatchChannel {
-    private var receiverMap = OrderedDictionary<String, Messager>()
+    fileprivate var receiverMap = OrderedDictionary<String, Messager>()
 
     public lazy private(set) var identifier = ObjectIdentifier(self)
 
@@ -27,7 +27,11 @@ public final class MessageDispatchChannel {
         receiverMap.removeValue(forKey: key)
     }
 
-    public func send<M: Message>(_ messge: M) {
+    public func send<M: Message>(
+        _ messge: M,
+        _ file: StaticString = #file,
+        _ line: Int = #line
+    ) {
         for (_, receiver) in receiverMap {
             receiver.receive(messge)
         }
@@ -55,6 +59,18 @@ extension MessageDispatchChannel {
 
     public func remove(_ combinator: Combinator) {
         removeValue(for: combinator.receiver.receiverIdentifier)
+    }
+
+    public func contains(_ element: Messager) -> Bool {
+        receiverMap.keys.contains(element.receiverIdentifier)
+    }
+
+    public func contains(_ element: Combinator) -> Bool {
+        contains(element.receiver)
+    }
+
+    public func contains(_ element: AnyReceiver) -> Bool {
+        receiverMap.keys.contains(element.receiverIdentifier)
     }
 }
 

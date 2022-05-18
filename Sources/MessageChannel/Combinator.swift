@@ -1,9 +1,5 @@
 /// An object tha resend the message, which is received by it's receiver, to hold channel
-@propertyWrapper
 public struct Combinator {
-    public var wrappedValue: AnyReceiver { receiver }
-    public var projectedValue: Combinator { self }
-
     private let channel: MessageDispatchChannel
     public let receiver: AnyReceiver
 
@@ -14,7 +10,7 @@ public struct Combinator {
     ///   this can not equals to dispatchChannel
     ///   - dispatchChannel: the channel messager re-dispatch message to
     public init<M: Message>(
-        wrappedValue: MessageReceiver<M>,
+        _ wrappedValue: MessageReceiver<M>,
         hook: @escaping (M) -> Void = { _ in },
         dispatchingIn dispatchChannel: MessageDispatchChannel,
         receivingIn receiverChannel: MessageDispatchChannel? = nil
@@ -22,13 +18,12 @@ public struct Combinator {
         // if receiverChannel == dispatchChannel will cause function call overflow
         // so we just do assert
         assert(receiverChannel != dispatchChannel, "Dispatch and receive message in the same channel")
-        wrappedValue.dispatch(to: dispatchChannel, hook: hook)
+        wrappedValue.hookReceiveCallback {
+            hook($0)
+            dispatchChannel.send($0)
+        }
         self.receiver = AnyReceiver(wrappedValue, autoRegister: true, channel: receiverChannel)
         self.channel = dispatchChannel
-    }
-
-    public func register() {
-        receiver.register()
     }
 
     public func removeAll() {
@@ -47,8 +42,12 @@ public struct Combinator {
         channel.removeValue(for: messager.receiverIdentifier)
     }
 
-    public func send<M: Message>(_ message: M) {
-        channel.send(message)
+    public func send<M: Message>(
+        _ message: M,
+        _ file: StaticString = #file,
+        _ line: Int = #line
+    ) {
+        channel.send(message, file, line)
     }
 }
 

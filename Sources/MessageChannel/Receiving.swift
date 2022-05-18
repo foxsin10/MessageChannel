@@ -13,7 +13,7 @@ public struct Receiving<M: Message> {
     }
 
     public init(
-        wrappedValue: M?,
+        wrappedValue: M? = nil,
         in channel: MessageDispatchChannel? = nil
     ) {
         let sender = CurrentValueSubject<M?, Never>(wrappedValue)
