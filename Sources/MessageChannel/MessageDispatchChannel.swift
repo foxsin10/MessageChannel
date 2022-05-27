@@ -104,6 +104,35 @@ extension MessageDispatchChannel {
     }
 }
 
+extension MessageDispatchChannel {
+    #if Tracing
+    var channelMap: String {
+        var content = ""
+
+        content.write("channel id: \(identifier)".inserIndent(by: 4))
+        content.write("\n")
+        for value in self.receiverMap.values {
+            switch value {
+            case let .receiver(receiver):
+                content.write(
+                    "receiver: \(receiver.receiverIdentifier)"
+                        .inserIndent(by: 4)
+                )
+
+            case let .combinator(combinator):
+                content.write(
+                    "combinator: [channel: \(combinator.channelIdentifier), receiver: \(combinator.receiver.receiverIdentifier)]"
+                        .inserIndent(by: 4)
+                )
+            }
+            content.write("\n")
+        }
+
+        return content
+    }
+    #endif
+}
+
 fileprivate struct MessageChannelKey: EnvironmentKey {
     static var defaultValue = MessageDispatchChannel()
 }

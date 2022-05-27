@@ -4,6 +4,10 @@ public struct Combinator {
     private let channel: MessageDispatchChannel
     public let receiver: AnyReceiver
 
+    public var channelIdentifier: String {
+        "\(channel.identifier)"
+    }
+
     /// Combinator initializer
     /// - Parameters:
     ///   - wrappedValue: messager
