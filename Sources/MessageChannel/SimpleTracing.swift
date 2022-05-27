@@ -10,8 +10,16 @@ public protocol Traceable {
     )
     func enable()
     func disable()
+    func chose(tracingLevel: TracingLevel)
 
     var isEnabled: Bool { get }
+
+    var tracingLevel: TracingLevel { get }
+}
+
+public enum TracingLevel {
+    case pretty
+    case verbose
 }
 
 private let printerQueue = {
@@ -45,12 +53,18 @@ public struct SimpleTracing {
 extension SimpleTracing: Traceable {
     public var isEnabled: Bool { wrapped.isEnabled }
 
+    public var tracingLevel: TracingLevel { wrapped.traceingLevel }
+
     public func enable() {
         wrapped.isEnabled = true
     }
 
     public func disable() {
         wrapped.isEnabled = false
+    }
+
+    public func chose(tracingLevel: TracingLevel) {
+        wrapped.traceingLevel = tracingLevel
     }
 
     public func record<M>(
@@ -68,23 +82,36 @@ extension SimpleTracing: Traceable {
             var messageContent = ""
             customDump(message, to: &messageContent, indent: 4)
 
-            var chennelContent = ""
-            customDump(channel, to: &chennelContent, indent: 4)
+            let channelInfo: String = {
+                switch tracingLevel {
+                case .pretty:
+                    return channel.channelMap
+                case .verbose:
+                    var info = ""
+                    customDump(channel, to: &info, indent: 4)
+                    return info
+                }
+            }()
 
             self.printer(
             """
-            [MessageChannel]
-            \(chennelContent)
-            [message]
+            [file] \(file.prettyerString()) [line] \(line)
+            [Message]
             \(messageContent)
-            [file]
-                \(file)
-            [line] \(line)\n
+            [MessageChannel]
+            \(channelInfo)
             """
            )
         }
-
         #endif
+    }
+}
+
+extension SimpleTracing {
+    final class WrappedConfig {
+        var isEnabled: Bool = false
+        var traceingLevel: TracingLevel = .pretty
+        init() {}
     }
 }
 
@@ -104,10 +131,18 @@ extension String {
     }
 }
 
-extension SimpleTracing {
-    final class WrappedConfig {
-        var isEnabled: Bool = false
+extension StaticString {
+    func prettyerString() -> String {
+        var fileComponents = "\(self)".components(separatedBy: "/")
+        let fileName = fileComponents.popLast()
+        let nearestPath = fileComponents.popLast()
 
-        init() {}
+        return [nearestPath, fileName].compactMap { $0 }.reduce(into: "", {
+            if $0.isEmpty {
+                $0 = $1
+            } else {
+                $0 = $0 + "/" + $1
+            }
+        })
     }
 }
